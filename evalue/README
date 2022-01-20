@@ -1,0 +1,4 @@
+# Fitting the e-value parameter for mu and lambda 
+
+The jupyter notebook shows the workflow how to fit mu/lambda and how to train a NN from the query composition. 
+The fitevd.cpp is mostly code from HMMer calibrate and is licensed as GPLv3. 
