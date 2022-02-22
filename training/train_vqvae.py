@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 
-import os
+import sys
 import numpy as np
 
 import torch
@@ -118,11 +118,13 @@ def train_vqvae(model, training_data, n_epochs, lr, batch_size):
 
 if __name__ == '__main__':
     # Start
-    seed = int(os.getenv('SEED'))
+    seed = sys.argv[1]
+    data_path = sys.argv[2]
+    out_dir = sys.argv[3]
     n_states = 20  # alphabet size
 
     # Load Data
-    training_data = np.load('vaevq_training_data.npy')  # n x 10 x 2
+    training_data = np.load(data_path)  # n x 10 x 2
     training_data = (training_data[:, :, 0], training_data[:, :, 1])  # (n x 10, n x 10)
 
     # Parameters
@@ -146,7 +148,7 @@ if __name__ == '__main__':
                                   model.encoder[6])
 
     # Export encoder, decoder and states
-    path, name = '.', ''
+    path, name = out_dir, ''
     torch.save(encoder_fused, f'{path}/encoder{name}.pt')
     torch.save(model.decoder, f'{path}/decoder{name}.pt')
     np.savetxt(f'{path}/states{name}.txt', model.vq.embedding.weight.detach().numpy())
