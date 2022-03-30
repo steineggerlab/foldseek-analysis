@@ -13,7 +13,8 @@ class Decoder(nn.Module):
         self.layers = nn.Sequential(nn.Linear(z_dim, hidden_dim),
                         nn.BatchNorm1d(hidden_dim), nn.ReLU(),
                         nn.Linear(hidden_dim, hidden_dim),
-                        nn.BatchNorm1d(hidden_dim), nn.ReLU())
+                        #nn.BatchNorm1d(hidden_dim), nn.ReLU()
+                        )
 
         self.mu = nn.Linear(hidden_dim, input_dim)
         self.logvar = nn.Linear(hidden_dim, input_dim)
@@ -115,10 +116,12 @@ def train_vqvae(model, training_data, n_epochs, lr, batch_size):
             loss.backward()
             optimizer.step()
 
+    print(f'opt_loss= {loss.item():.3}')
+
 
 if __name__ == '__main__':
     # Start
-    seed = sys.argv[1]
+    seed = int(sys.argv[1])
     data_path = sys.argv[2]
     out_dir = sys.argv[3]
     n_states = 20  # alphabet size
