@@ -1,6 +1,19 @@
 #!/bin/bash -x
 
+if [ "$#" -ne 5 ]; then
+    echo "Illegal number of parameters"
+    exit
+fi
+
+K=$1
+TRIES=$2
+PDBS_TRAIN=$3
+PDBS_VAL=$4
+
+OUTPUT_DIR=$5 # save alphabet here
+
 mkdir -p tmp
+mkdir -p $OUTPUT_DIR
 
 # Fetch PDBs
 if [ ! -d tmp/pdb ]; then
@@ -17,79 +30,77 @@ fi
 # Filter alignments for training
 awk 'FNR==NR {pdbs[$1]=1; next}
      ($1 in pdbs) && ($2 in pdbs) {print $1,$2,$10}' \
-         data/pdbs_train.txt data/tmaln-06.out > tmp/pairfile_train.out
-
-# Filter scop_lookup file for validation
-awk 'FNR==NR {pdbs[$1]=1; next}
-     ($1 in pdbs) {print $0}' \
-        data/pdbs_val.txt data/scop_lookup.tsv > tmp/scop_lookup_val.tsv
+         $PDBS_TRAIN data/tmaln-06.out > tmp/pairfile_train.out
 
 # Benchmark virtual center positions
 #for D in {1,1.5,2,2.5,3}; do
-#    for ALPHA in {45..360..45}; do
-#        for BETA in {0..180..45}; do
-#            echo -n $ALPHA $BETA $D >> tmp/log.txt
+#    for THETA in {45..360..45}; do
+#        for TAU in {0..180..45}; do
+#            echo -n $THETA $TAU $D >> "$OUTPUT_DIR/log.txt"
 #            # create alphabet and benchmark
 #        done
 #    done
 #done
 
-ALPHA=270
-BETA=0
+THETA=270
+TAU=0
 D=2
 
 # Create training data
 ./create_vqvae_training_data.py \
-    tmp/pdb tmp/pairfile_train.out $ALPHA $BETA $D tmp/vaevq_training_data.npy
+    tmp/pdb tmp/pairfile_train.out $THETA $TAU $D tmp/vaevq_training_data.npy
 
-rm tmp/log.txt
-for seed in {1..100}
+for ((seed=0;seed<$TRIES;seed++))
 do
-    echo -n "$seed " >> tmp/log.txt
+    echo -n "$seed " >> "$OUTPUT_DIR/log.txt"
 
-    ./train_vqvae.py $seed tmp/vaevq_training_data.npy tmp
+    ./train_vqvae.py $seed tmp/vaevq_training_data.npy tmp $K \
+    | awk '/opt_loss=/{printf "%s ", $2}' >> "$OUTPUT_DIR/log.txt"
     
-    ./encode_pdbs.py tmp/encoder.pt tmp/states.txt --pdb_dir tmp/pdb --virt $ALPHA $BETA $D \
-        < data/pdbs_train.txt > tmp/seqs.csv
+    $RUN \
+      ./encode_pdbs.py tmp/encoder.pt tmp/states.txt \
+      --pdb_dir tmp/pdb --virt $THETA $TAU $D \
+      < $PDBS_TRAIN > tmp/seqs.csv
     
     ./create_submat.py tmp/pairfile_train.out tmp/seqs.csv --mat tmp/sub_score.mat
     
-    # Encode validation PDBs
-    ./encode_pdbs.py tmp/encoder.pt tmp/states.txt --pdb_dir tmp/pdb --virt $ALPHA $BETA $D \
-        < data/pdbs_val.txt > tmp/seqs_val.csv
-    
-    # Prepare for benchmark
-    mkdir -p tmp/splits
-    mkdir -p tmp/alignments
-    awk '{print ">" $1} {print $2}' < tmp/seqs_val.csv > tmp/target.fasta
-    split -n 30 -d tmp/target.fasta tmp/splits/split_ --additional-suffix=.fasta
-    
-    ./run-smithwaterman.sh 8 2
-    
-    ../scopbenchmark/scripts/bench.awk tmp/scop_lookup_val.tsv \
-        <(cat tmp/alignments/*.m8) > tmp/result.rocx
-    
-    # Calculate AUC
-    awk '{famsum+=$3; supfamsum+=$4; foldsum+=$5} END{print famsum/NR,supfamsum/NR,foldsum/NR}' \
-        tmp/result.rocx >> tmp/log.txt
-    
+    ./run-benchmark.sh tmp/encoder.pt tmp/states.txt tmp/sub_score.mat \
+      $PDBS_VAL data/scop_lookup.tsv $THETA $TAU $D X >> "$OUTPUT_DIR/log.txt"
+
 done
 
 # Find best seed
 # TMalign.rocx => 0.928162 0.662063 0.275436
-SEED=$(awk '{print $1, ($2/0.928162 + $3/0.662063 + $4/0.275436) / 3}' tmp/log.txt \
+SEED=$(awk '{print $1, ($3/0.928162 + $4/0.662063 + $5/0.275436) / 3}' "$OUTPUT_DIR/log.txt" \
         | sort -rk 2,2 | head -n 1 | awk '{print $1}')
 
 # Create final alphabet
-./train_vqvae.py "$SEED" tmp/vaevq_training_data.npy tmp
-find tmp/pdb -type f -name 'd*' -printf "%f\n" > tmp/pdbs.txt
-awk '{print $1,$2,$10}' data/tmaln-06.out > tmp/pairfile.out
-./encode_pdbs.py tmp/encoder.pt tmp/states.txt --pdb_dir tmp/pdb --virt $ALPHA $BETA $D \
-    < tmp/pdbs.txt > tmp/seqs.csv
-./create_submat.py tmp/pairfile.out tmp/seqs.csv --mat tmp/sub_score.mat --merge_state X \
-    | tee tmp/create_submat.log
+./train_vqvae.py "$SEED" tmp/vaevq_training_data.npy $OUTPUT_DIR $K
+
+# Create final submat
+cp $PDBS_TRAIN tmp/pdbs_submat.txt
+awk 'FNR==NR {pdbs[$1]=1; next}
+     ($1 in pdbs) && ($2 in pdbs) {print $1,$2,$10}' \
+         tmp/pdbs_submat.txt data/tmaln-06.out > tmp/pairfile_submat.out
+
+$RUN ./encode_pdbs.py $OUTPUT_DIR/encoder.pt $OUTPUT_DIR/states.txt \
+  --pdb_dir tmp/pdb --virt $THETA $TAU $D \
+    < tmp/pdbs_submat.txt > tmp/seqs.csv
+
+./create_submat.py tmp/pairfile_submat.out tmp/seqs.csv \
+  --mat tmp/sub_score.mat --merge_state X \
+  | tee tmp/create_submat.log
+
+awk '/^assign_invalid_states_to/{printf "%s", $3}' tmp/create_submat.log > "$OUTPUT_DIR/invalid_state.txt"
+
+# Add X to submat TODO: adapt to k
+awk 'NR==1 {printf "%s   X\n", $0}
+NR!=1 {printf "%s   0\n", $0}
+END{print "X   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0"}' \
+ tmp/sub_score.mat > "$OUTPUT_DIR/sub_score.mat"
+
 # Merge X state in seq. file
-awk 'FNR==NR && /^assign_invalid_states_to/{newxstate=$3;nextfile}
-     FNR!=NR {gsub(/X/,newxstate,$2);print $1,$2}' \
-         tmp/create_submat.log tmp/seqs.csv > tmp/seqs_no_x.csv
+#awk 'FNR==NR && /^assign_invalid_states_to/{newxstate=$3;nextfile}
+#     FNR!=NR {gsub(/X/,newxstate,$2);print $1,$2}' \
+#         tmp/create_submat.log tmp/seqs.csv > tmp/seqs_no_x.csv
 

@@ -124,7 +124,7 @@ if __name__ == '__main__':
     seed = int(sys.argv[1])
     data_path = sys.argv[2]
     out_dir = sys.argv[3]
-    n_states = 20  # alphabet size
+    n_states = int(sys.argv[4])  # alphabet size
 
     # Load Data
     training_data = np.load(data_path)  # n x 10 x 2

@@ -15,6 +15,8 @@ import torch
 import create_vqvae_training_data
 import extract_pdb_features
 
+# 50 letters (X/x are missing)
+LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWYZabcdefghijklmnopqrstuvwyz'
 
 def predict(model, x):
     model.eval()
@@ -55,7 +57,8 @@ if __name__ == '__main__':
 
         states = np.full(len(mask), -1)
         states[mask] = valid_states
+
         print(os.path.basename(fn), end=' ')
-        print(''.join([chr(ord('A') + state) if state != -1 else args.invalid_state
+        print(''.join([LETTERS[state] if state != -1 else args.invalid_state
             for state in states]))
 

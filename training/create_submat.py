@@ -30,6 +30,8 @@ seqfile_path = args.seqfile
 pairfile_path = args.pairfile
 sub_scores_path = args.mat
 
+_err_cnt = 0
+
 def parse_cigar(cigar_string):
     ref, query = 0, 0
     matches = []
@@ -106,10 +108,15 @@ for line in pair_file:
     seq1 = sid2seq.get(sid1, None)
     seq2 = sid2seq.get(sid2, None)
     if (not seq1) or (not seq2):
-        if not seq1:
+        if not seq1 and _err_cnt < 100:
             print(f'Not found: {sid1}', file=sys.stderr)
-        if not seq2:
+            _err_cnt += 1
+        if not seq2 and _err_cnt < 100:
             print(f'Not found: {sid2}', file=sys.stderr)
+            _err_cnt += 1
+        if _err_cnt == 100:
+            print(f'errors truncated...', file=sys.stderr)
+            _err_cnt += 1
         continue
 
     idx_1, idx_2 = parse_cigar(cigar_string).T
