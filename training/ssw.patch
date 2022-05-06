@@ -1,0 +1,25 @@
+diff --git a/src/main.c b/src/main.c
+index 29ebc52..9c03449 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -302,13 +302,15 @@ int main (int argc, char * const argv[]) {
+ 
+ 	// Parse score matrix.
+ 		FILE *f_mat = fopen(mat_name, "r");
+-		char line[128];
+-		mata = (int8_t*)realloc(mata, 1024 * sizeof(int8_t));
++		char line[256];
++		mata = (int8_t*)realloc(mata, 4096 * sizeof(int8_t)); // 1024
+ 		k = 0;
+ 		m = 0;
+-		while (fgets(line, 128, f_mat)) {
+-			if (line[0] == '*' || (line[0] >= 'A' && line[0] <= 'Z')) {
+-				if (line[0] >= 'A' && line[0] <= 'Z') aa_table[(int)line[0]] = aa_table[(int)line[0] + 32] = m;
++		while (fgets(line, 256, f_mat)) {
++			if (line[0] == '*' || (line[0] >= 'A' && line[0] <= 'Z') || (line[0] >= 'a' && line[0] <= 'z')) {
++				if ((line[0] >= 'A' && line[0] <= 'Z') || (line[0] >= 'a' && line[0] <= 'z'))
++          //aa_table[(int)line[0]] = aa_table[(int)line[0] + 32] = m;
++          aa_table[(int)line[0]] = m;
+ 				char str[4], *s = str;
+ 				str[0] = '\0';
+ 				l = 1;
