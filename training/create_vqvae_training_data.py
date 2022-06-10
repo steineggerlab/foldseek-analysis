@@ -58,9 +58,11 @@ def align_features(pdb_dir, virtual_center, sid1, sid2, cigar_string):
 
 if __name__ == '__main__':
     pdb_dir = sys.argv[1]
-    a = int(sys.argv[2])
-    b = int(sys.argv[3])
-    c = float(sys.argv[4])
+    pairfile = sys.argv[2]
+    a = int(sys.argv[3])
+    b = int(sys.argv[4])
+    c = float(sys.argv[5])
+    out = sys.argv[6]
     virtual_center = (a, b, c)
 
     with open(data_dir + 'pdbs_train.txt') as file:
@@ -68,10 +70,9 @@ if __name__ == '__main__':
 
     # Find alignments between PDBs of the training set
     alignments = []
-    with open(data_dir + 'tmaln-06.out') as file:
+    with open(pairfile) as file:
         for line in file:
-            cols = line.rstrip('\n').split()
-            sid1, sid2, cigar_string = cols[0], cols[1], cols[9]
+            sid1, sid2, cigar_string = line.rstrip('\n').split()
 
             if sid1 in pdbs_train and sid2 in pdbs_train:
                 #print(' '.join((sid1, sid2, cigar_string)))
@@ -90,6 +91,5 @@ if __name__ == '__main__':
     idx = np.arange(len(x_feat))
     np.random.RandomState(123).shuffle(idx)
 
-    # md5sum: 95b1a4a6b5478a63233f94b9ff5ff532
-    np.save('vaevq_training_data.npy', np.dstack([x_feat[idx], y_feat[idx]]))
+    np.save(out, np.dstack([x_feat[idx], y_feat[idx]]))
 
