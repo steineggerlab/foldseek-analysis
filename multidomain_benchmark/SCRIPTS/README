@@ -1,0 +1,11 @@
+Create muktidomain benchmarking data (however since we randomly split into query and target this will not return consistent results)
+- create_benchmark_data.sh
+
+Run tools on benchmark
+- run_multidomain_benchmark.sh
+
+Reproduce plots 2f and 2g (Coverage and alignment quality)
+- evaluate_results.sh
+
+Reproduce Suppl Figures 10/11/12 (SCOPe TP/FP distributions, AF first hit distributions, Coverage)
+- scop_af_distriubtion.sh
