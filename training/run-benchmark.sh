@@ -34,7 +34,7 @@ split -n 30 -d tmp/target.fasta tmp/splits/split_ --additional-suffix=.fasta
 
 ./run-smithwaterman.sh 8 2  # sub_score.mat, target.fasta
 
-../scopbenchmark/scripts/bench.awk tmp/scop_lookup_filtered.tsv \
+./roc1.awk tmp/scop_lookup_filtered.tsv \
     <(cat tmp/alignments/*.m8) > tmp/result.rocx
 
 # Calculate AUC
