@@ -1,0 +1,28 @@
+--- ../foldseek/src/strucclustutils/tmalign.cpp	2022-03-23 15:32:19.344053164 +0100
++++ src/strucclustutils/tmalign.cpp	2022-04-09 15:13:23.597766900 +0200
+@@ -1,3 +1,4 @@
++#include <chrono>
+ #include "DBReader.h"
+ #include "DBWriter.h"
+ #include "IndexReader.h"
+@@ -199,6 +200,8 @@
+                     if(queryLen <=5 || targetLen <=5){
+                         continue;
+                     }
++
++                    auto t1 = std::chrono::high_resolution_clock::now();
+                     TMalign_main(&affineNW,
+                                  targetCaCords, queryCaCords, targetSeq, querySeq, targetSecStruc, querySecStruc,
+                                  t0, u0, TM1, TM2, TM3, TM4, TM5,
+@@ -207,6 +210,11 @@
+                                  rmsd0, Liden,  n_ali, n_ali8,
+                                  targetLen, queryLen, Lnorm_ass, d0_scale,
+                                  I_opt, a_opt, u_opt, d_opt, fast_opt, mem);
++
++                    auto t2 = std::chrono::high_resolution_clock::now();
++                    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
++                    std::cout << "myduration " << queryLen << " " << targetLen << " " << TM1 << " " << TM2 << " " << queryId << " " << targetId << " " << duration.count() << "\n";
++
+                     //std::cout << queryId << "\t" << targetId << "\t" <<  TM_0 << "\t" << TM1 << std::endl;
+ 
+                     //double seqId = (n_ali8 > 0) ? (Liden / (static_cast<double>(n_ali8))) : 0;

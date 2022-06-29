@@ -1,0 +1,33 @@
+--- TMalign.cpp.init	2022-04-08 15:44:49.792600807 +0200
++++ TMalign.cpp	2022-04-08 15:29:00.852419231 +0200
+@@ -79,6 +79,7 @@
+ #include <algorithm>
+ #include <string>
+ #include <map>
++#include <chrono>
+ 
+ using namespace std;
+ 
+@@ -5059,7 +5060,9 @@
+                         xlen, ylen, sequence, Lnorm_ass, d0_scale,
+                         i_opt, a_opt, u_opt, d_opt, fast_opt,
+                         mol_vec1[chain_i]+mol_vec2[chain_j],TMcut);
+-                    else TMalign_main(
++                    else {
++                      auto t1 = std::chrono::high_resolution_clock::now();
++                      TMalign_main(
+                         xa, ya, seqx, seqy, secx, secy,
+                         t0, u0, TM1, TM2, TM3, TM4, TM5,
+                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+@@ -5069,6 +5072,11 @@
+                         i_opt, a_opt, u_opt, d_opt, fast_opt,
+                         mol_vec1[chain_i]+mol_vec2[chain_j],TMcut);
+ 
++                      auto t2 = std::chrono::high_resolution_clock::now();
++                      auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
++                      std::cout << "myduration " << duration.count() << "\n";
++                    }
++
+                     /* print result */
+                     if (outfmt_opt==0) print_version();
+                     output_results(
