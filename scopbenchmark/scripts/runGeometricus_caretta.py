@@ -1,4 +1,3 @@
-#!/home/stephkim/anaconda3/bin/python
 from time import time
 import argparse
 from numpy import ndarray
