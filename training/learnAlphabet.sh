@@ -17,7 +17,7 @@ mkdir -p $OUTPUT_DIR
 
 # Fetch PDBs
 if [ ! -d tmp/pdb ]; then
-    curl https://wwwuser.gwdg.de/~compbiol/foldseek/scp40pdb.tar.gz | tar -xz -C tmp
+    curl https://wwwuser.gwdg.de/~compbiol/foldseek/scop40pdb.tar.gz | tar -xz -C tmp
 fi
 
 # Compile ssw_test
